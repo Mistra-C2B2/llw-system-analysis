@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Visualization</title>
+    <style>
+        #cy {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+        #info {
+            margin-top: 10px;
+            font-family: sans-serif;
+        }
+    </style>
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+    <h1>System Visualization</h1>
+    <div id="cy"></div>
+    <div id="info"></div>
+    <script>
+        async function loadGraph() {
+            const response = await fetch('edges.csv');
+            const csvText = await response.text();
+            const parsed = Papa.parse(csvText.trim(), {header: true});
+
+            const nodes = new Set();
+            const edges = [];
+            parsed.data.forEach(row => {
+                const src = row.source.trim();
+                const tgt = row.target.trim();
+                const effect = (row.effect || '').trim();
+                const confidence = (row.confidence || '').trim();
+                const reference = (row.reference || '').trim();
+
+                nodes.add(src);
+                nodes.add(tgt);
+                edges.push({
+                    data: {
+                        id: src + '_' + tgt,
+                        source: src,
+                        target: tgt,
+                        effect: effect,
+                        confidence: confidence,
+                        reference: reference
+                    }
+                });
+            });
+
+            const elements = Array.from(nodes).map(n => ({ data: { id: n, label: n } })).concat(edges);
+
+            const cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: elements,
+                layout: { name: 'grid' },
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'content': 'data(label)',
+                            'text-valign': 'center',
+                            'color': '#000',
+                            'background-color': '#61bffc'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'curve-style': 'bezier',
+                            'target-arrow-shape': 'triangle',
+                            'width': 2,
+                            'line-color': '#ccc',
+                            'target-arrow-color': '#ccc'
+                        }
+                    },
+                    {
+                        selector: "edge[effect = 'positive']",
+                        style: {
+                            'line-color': '#2ecc71',
+                            'target-arrow-color': '#2ecc71'
+                        }
+                    },
+                    {
+                        selector: "edge[effect = 'negative']",
+                        style: {
+                            'line-color': '#e74c3c',
+                            'target-arrow-color': '#e74c3c'
+                        }
+                    },
+                    {
+                        selector: "edge[confidence = 'unsure']",
+                        style: {
+                            'line-style': 'dashed'
+                        }
+                    }
+                ]
+            });
+
+            cy.on('tap', 'edge', evt => {
+                const d = evt.target.data();
+                const info = `Effect: ${d.effect}\nConfidence: ${d.confidence}\nReference: ${d.reference}`;
+                document.getElementById('info').textContent = info;
+            });
+        }
+
+        loadGraph();
+    </script>
+</body>
+</html>
