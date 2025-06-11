@@ -5,13 +5,21 @@ Living Lab West - System Analysis
 
 Start a local web server in this directory (for example `python3 -m http.server`) and open `index.html` in your browser to view the system visualization. The page uses Cytoscape.js to render a graph described by `edges.csv`.
 
-`edges.csv` now contains the following columns:
+`edges.csv` contains both nodes and edges. Important columns are:
 
-- `source` – the ID of the source node
-- `target` – the ID of the target node
-- `effect` – either `positive` or `negative`
-- `confidence` – either `sure` or `unsure`
-- `reference` – free‑text references or notes
+- `Kod` – unique identifier for the row
+- `Komponent (box)` – name of the node
+- `Samband (pil)` – name of the interaction/edge
+- `Beskrivning`
+- `Trend`
+- `Tillförlitlighet av kunskapen`
+- `Exempel på källor`
+- `Granskare`
+- `Kommentar`
+- `type` – either `Node` or `Edge`
+- `from_node`, `to_node` – original source and target labels
+- `from_node_corrected`, `to_node_corrected` – cleaned source and target labels used for building the graph
 
-When the page loads, the CSV is fetched, parsed and displayed as a graph. Edges are styled according to their effect (green for positive, red for negative) and dashed if the confidence is unsure.
-Clicking an edge shows its effect, confidence and reference. Clicking a node now displays its incoming and outgoing edge counts.
+Rows where `type` is `Node` describe a node using `Kod` and `Komponent (box)`. Rows where `type` is `Edge` describe a connection between `from_node_corrected` and `to_node_corrected`. Any row missing a code or type is ignored.
+
+When the page loads the CSV is parsed and displayed as a graph. Edges whose confidence includes "osäker" are shown with dashed lines. Clicking an edge displays its trend, confidence and reference. Clicking a node shows its label, description and counts of incoming and outgoing edges.
