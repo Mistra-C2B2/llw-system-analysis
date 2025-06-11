@@ -1,6 +1,6 @@
-source,target,effect,confidence,reference
-A,B,positive,sure,Example reference 1
-B,C,negative,unsure,Example reference 2
-C,D,positive,sure,Example reference 3
-D,A,negative,sure,Example reference 4
-A,C,positive,unsure,Example reference 5
+Kod,Beteckning:  Komponent (box) Interaktion (pil),Beskrivning,Samband (pil) från,Samband /(pil) till,Trend,Tillförlitlighet av kunskapen,Exempel på källor,Granskare,Kommentar,Organisation,Mandat
+D1,Klimatförändingar,"Det globala klimatet påverkar marina organismer och havets användare.",,,Ökar i helhet,Säker,"1. Sammanfattning i Morf et al. 2024 C2B2 D1.1",AM/ML,Finns ett bra kapitel.,,
+D 1-2,Förändringar i temperatur och salthalt,Förändrat livsvillkor för pelagisk fisk,D1 Klimat,2.5 Pelagiskt fiskbestånd,Minskar,Tämligen säkert,"1. https://www.naturvardsverket.se/",EE,,,
+2,Marin miljö i dåligt skick,"Den marina miljön är i dåligt skick.",,,Olika trender,,"Trendöversikt: HELCOM-HOLAS","ML, AM",,,
+D 1-5,Extrema väderhändelser och klimatförändringar kan påverka fisket,Extrema väderhändelser kan påverka fisket,D1 Klimat,3. Fiske,Negativ,Osäker,"1. Sühring et al 2023",ML,,,
+,,This row should be ignored,,,,,,,,

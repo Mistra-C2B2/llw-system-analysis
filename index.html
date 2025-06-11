@@ -43,30 +43,53 @@
             const csvText = await response.text();
             const parsed = Papa.parse(csvText.trim(), {header: true});
 
-            const nodes = new Set();
+            const nodes = new Map();
             const edges = [];
-            parsed.data.forEach(row => {
-                const src = row.source.trim();
-                const tgt = row.target.trim();
-                const effect = (row.effect || '').trim();
-                const confidence = (row.confidence || '').trim();
-                const reference = (row.reference || '').trim();
 
-                nodes.add(src);
-                nodes.add(tgt);
-                edges.push({
-                    data: {
-                        id: src + '_' + tgt,
-                        source: src,
-                        target: tgt,
-                        effect: effect,
-                        confidence: confidence,
-                        reference: reference
-                    }
-                });
+            const parseCode = str => {
+                if (!str) return '';
+                return str.trim().split(/\s+/)[0].replace(/[.,]$/, '');
+            };
+
+            parsed.data.forEach(row => {
+                const code = (row['Kod'] || '').trim();
+                if (!code) return;
+
+                if (code.includes('-')) {
+                    const src = parseCode(row['Samband (pil) från']);
+                    const tgt = parseCode(row['Samband /(pil) till']);
+                    if (!src || !tgt) return;
+                    const effect = (row['Trend'] || '').trim();
+                    const confidence = (row['Tillförlitlighet av kunskapen'] || '').trim();
+                    const reference = (row['Exempel på källor'] || '').trim();
+
+                    edges.push({
+                        data: {
+                            id: code,
+                            source: src,
+                            target: tgt,
+                            effect: effect,
+                            confidence: confidence,
+                            reference: reference
+                        }
+                    });
+                } else {
+                    const label = (row['Beteckning:  Komponent (box) Interaktion (pil)'] || '').trim();
+                    const description = (row['Beskrivning'] || '').trim();
+                    nodes.set(code, { data: { id: code, label: label || code, description: description } });
+                }
             });
 
-            const elements = Array.from(nodes).map(n => ({ data: { id: n, label: n } })).concat(edges);
+            edges.forEach(e => {
+                if (!nodes.has(e.data.source)) {
+                    nodes.set(e.data.source, { data: { id: e.data.source, label: e.data.source, description: '' } });
+                }
+                if (!nodes.has(e.data.target)) {
+                    nodes.set(e.data.target, { data: { id: e.data.target, label: e.data.target, description: '' } });
+                }
+            });
+
+            const elements = Array.from(nodes.values()).concat(edges);
 
             const cy = cytoscape({
                 container: document.getElementById('cy'),
@@ -127,7 +150,8 @@
 
             cy.on('tap', 'node', evt => {
                 const n = evt.target;
-                const info = `Node: ${n.id()}\nIncoming edges: ${n.incomers('edge').length}\nOutgoing edges: ${n.outgoers('edge').length}`;
+                const d = n.data();
+                const info = `Node: ${d.label}\nIncoming edges: ${n.incomers('edge').length}\nOutgoing edges: ${n.outgoers('edge').length}\n${d.description || ''}`;
                 document.getElementById('info').textContent = info;
             });
         }
