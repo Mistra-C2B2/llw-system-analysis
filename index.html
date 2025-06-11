@@ -41,25 +41,33 @@
         async function loadGraph() {
             const response = await fetch('edges.csv');
             const csvText = await response.text();
-            const parsed = Papa.parse(csvText.trim(), {header: true});
+            const parsed = Papa.parse(csvText.trim(), { header: true });
 
             const nodes = new Map();
             const edges = [];
 
-            const parseCode = str => {
-                if (!str) return '';
-                return str.trim().split(/\s+/)[0].replace(/[.,]$/, '');
+            const classifyTrend = trend => {
+                const t = trend.toLowerCase();
+                if (t.includes('ökar') || t.includes('ökande') || t.includes('positiv')) return 'positive';
+                if (t.includes('minskar') || t.includes('negativ')) return 'negative';
+                return 'neutral';
             };
 
             parsed.data.forEach(row => {
                 const code = (row['Kod'] || '').trim();
-                if (!code) return;
+                const type = (row['type'] || '').trim().toLowerCase();
+                if (!code || !type) return;
 
-                if (code.includes('-')) {
-                    const src = parseCode(row['Samband (pil) från']);
-                    const tgt = parseCode(row['Samband /(pil) till']);
+                if (type === 'node') {
+                    const label = (row['Komponent (box)'] || code).trim();
+                    const description = (row['Beskrivning'] || '').trim();
+                    nodes.set(code, { data: { id: code, label, description } });
+                } else if (type === 'edge') {
+                    const src = (row['from_node_corrected'] || row['from_node'] || '').trim();
+                    const tgt = (row['to_node_corrected'] || row['to_node'] || '').trim();
                     if (!src || !tgt) return;
-                    const effect = (row['Trend'] || '').trim();
+
+                    const trend = (row['Trend'] || '').trim();
                     const confidence = (row['Tillförlitlighet av kunskapen'] || '').trim();
                     const reference = (row['Exempel på källor'] || '').trim();
 
@@ -68,15 +76,13 @@
                             id: code,
                             source: src,
                             target: tgt,
-                            effect: effect,
-                            confidence: confidence,
-                            reference: reference
+                            trend,
+                            effect: classifyTrend(trend),
+                            confidence,
+                            confidenceClass: confidence.toLowerCase().includes('osäker') ? 'unsure' : 'sure',
+                            reference
                         }
                     });
-                } else {
-                    const label = (row['Beteckning:  Komponent (box) Interaktion (pil)'] || '').trim();
-                    const description = (row['Beskrivning'] || '').trim();
-                    nodes.set(code, { data: { id: code, label: label || code, description: description } });
                 }
             });
 
@@ -134,7 +140,7 @@
                         }
                     },
                     {
-                        selector: "edge[confidence = 'unsure']",
+                        selector: "edge[confidenceClass = 'unsure']",
                         style: {
                             'line-style': 'dashed'
                         }
@@ -144,7 +150,7 @@
 
             cy.on('tap', 'edge', evt => {
                 const d = evt.target.data();
-                const info = `Effect: ${d.effect}\nConfidence: ${d.confidence}\nReference: ${d.reference}`;
+                const info = `Trend: ${d.trend}\nConfidence: ${d.confidence}\nSources: ${d.reference}`;
                 document.getElementById('info').textContent = info;
             });
 
