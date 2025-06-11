@@ -14,3 +14,4 @@ Start a local web server in this directory (for example `python3 -m http.server`
 - `reference` – free‑text references or notes
 
 When the page loads, the CSV is fetched, parsed and displayed as a graph. Edges are styled according to their effect (green for positive, red for negative) and dashed if the confidence is unsure.
+Clicking an edge shows its effect, confidence and reference. Clicking a node now displays its incoming and outgoing edge counts.
