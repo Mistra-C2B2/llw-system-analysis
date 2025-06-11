@@ -3,7 +3,7 @@ Living Lab West - System Analysis
 
 ## Usage
 
-Start a local web server in this directory (for example `python3 -m http.server`) and open `index.html` in your browser to view the system visualization. The page uses Cytoscape.js to render a graph described by `edges.csv`.
+You can simply open `index.html` in your browser or serve the folder with a small web server (for example `python3 -m http.server`). When served over HTTP the page loads `edges.csv` directly. When opened from the file system, the script falls back to an embedded copy of the same CSV so you do not get a CORS error.
 
 `edges.csv` now contains the following columns:
 

@@ -17,6 +17,8 @@
     </style>
     <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <!-- Embedded CSV data for local use -->
+    <script src="edges.js"></script>
 </head>
 <body>
     <h1>System Visualization</h1>
@@ -24,8 +26,17 @@
     <div id="info"></div>
     <script>
         async function loadGraph() {
-            const response = await fetch('edges.csv');
-            const csvText = await response.text();
+            let csvText = window.edgesCsv;
+            if (window.location.protocol.startsWith('http')) {
+                try {
+                    const response = await fetch('edges.csv');
+                    if (response.ok) {
+                        csvText = await response.text();
+                    }
+                } catch (e) {
+                    console.warn('Failed to fetch edges.csv, using embedded data', e);
+                }
+            }
             const parsed = Papa.parse(csvText.trim(), {header: true});
 
             const nodes = new Set();
