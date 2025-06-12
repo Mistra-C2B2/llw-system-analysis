@@ -9,6 +9,8 @@ system analysis. The app fetches `llw_system_analysis.csv` and displays an
 interactive network using Cytoscape.js. Nodes are organised hierarchically
 based on their numeric id (e.g. `2` contains `2.1` and `2.2`), using
 compound nodes so related topics are grouped together.
+Nodes are automatically arranged using Cytoscape's force-directed `cose`
+layout so the network is easier to read.
 
 ## Development with Vite
 

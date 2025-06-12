@@ -83,7 +83,8 @@ async function init() {
           }
         }
       ],
-      layout: { name: 'breadthfirst', directed: true, padding: 50 }
+      // Use a force directed layout so nodes are not aligned in a single row
+      layout: { name: 'cose', padding: 50 }
     });
 
     // Tooltips
