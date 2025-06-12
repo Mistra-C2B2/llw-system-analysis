@@ -5,6 +5,7 @@
     <title>LLW System Analysis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/cytoscape@3.23.0/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
     <script src="https://unpkg.com/cytoscape-popper@1.0.7/cytoscape-popper.js"></script>
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
@@ -146,12 +147,13 @@
                     }
                 ],
                 layout: {
-                    name: 'cose',
-                    nodeRepulsion: 10000,
-                    nodeOverlap: 10,
+                    name: 'fcose',
+                    nodeRepulsion: 4500,
                     idealEdgeLength: 100,
-                    edgeElasticity: 100,
-                    gravity: 80,
+                    nodeSeparation: 75,
+                    gravity: 0.25,
+                    gravityRange: 3.8,
+                    gravityCompound: 1.0,
                     padding: 30
                 }
             });
