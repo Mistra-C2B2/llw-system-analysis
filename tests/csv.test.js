@@ -15,4 +15,12 @@ describe('CSV data', () => {
     const edges = rows.filter(r => r.source && r.target);
     expect(edges.length).toBeGreaterThan(0);
   });
+
+  it('detects hierarchical nodes', () => {
+    const child = rows.find(r => r.id && r.id.includes('.') && !r.source && !r.target);
+    expect(child).toBeTruthy();
+    const parentId = child.id.substring(0, child.id.lastIndexOf('.'));
+    const parent = rows.find(r => r.id === parentId && !r.source && !r.target);
+    expect(parent).toBeTruthy();
+  });
 });

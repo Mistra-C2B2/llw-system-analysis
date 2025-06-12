@@ -6,7 +6,9 @@ Living Lab West - System Analysis
 
 Start the dev server and open the printed URL in your browser to explore the
 system analysis. The app fetches `llw_system_analysis.csv` and displays an
-interactive network using Cytoscape.js.
+interactive network using Cytoscape.js. Nodes are organised hierarchically
+based on their numeric id (e.g. `2` contains `2.1` and `2.2`), using
+compound nodes so related topics are grouped together.
 
 ## Development with Vite
 

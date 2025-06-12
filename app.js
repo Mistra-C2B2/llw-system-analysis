@@ -13,24 +13,32 @@ async function init() {
                     trend.startsWith('neg') ? 'bg-red-400' : 'bg-gray-300';
 
       if (row.source && row.target) {
-        edges.push({ data: {
-          id: row.id,
-          source: row.source,
-          target: row.target,
-          label: row.label,
-          description: row.description,
-          trend: row.trend,
-          reliability: row.reliability
-        }});
+        edges.push({
+          data: {
+            id: row.id,
+            source: row.source,
+            target: row.target,
+            label: row.label,
+            description: row.description,
+            trend: row.trend,
+            reliability: row.reliability
+          }
+        });
       } else {
-        nodes.push({ data: {
-          id: row.id,
-          label: row.label,
-          description: row.description,
-          trend: row.trend,
-          reliability: row.reliability,
-          color
-        }});
+        const parentId = row.id.includes('.')
+          ? row.id.substring(0, row.id.lastIndexOf('.'))
+          : undefined;
+        nodes.push({
+          data: {
+            id: row.id,
+            parent: parentId,
+            label: row.label,
+            description: row.description,
+            trend: row.trend,
+            reliability: row.reliability,
+            color
+          }
+        });
       }
     });
 
@@ -53,6 +61,13 @@ async function init() {
           }
         },
         {
+          selector: ':parent',
+          style: {
+            'background-opacity': 0.1,
+            'padding': 20
+          }
+        },
+        {
           selector: 'edge',
           style: {
             'curve-style': 'bezier',
@@ -68,7 +83,7 @@ async function init() {
           }
         }
       ],
-      layout: { name: 'cose', padding: 50 }
+      layout: { name: 'breadthfirst', directed: true, padding: 50 }
     });
 
     // Tooltips
