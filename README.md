@@ -11,6 +11,7 @@ based on their numeric id (e.g. `2` contains `2.1` and `2.2`), using
 compound nodes so related topics are grouped together.
 Nodes are automatically arranged using Cytoscape's force-directed `cose`
 layout so the network is easier to read.
+Nodes that are not connected to any edges are filtered out for a clearer view.
 
 ## Development with Vite
 

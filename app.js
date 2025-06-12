@@ -1,11 +1,41 @@
 // Fetch and render the CSV as an interactive network
 async function init() {
   try {
-    const response = await fetch("llw_system_analysis.csv");
-    const csvText = await response.text();
-    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+    const nodeMap = new Map();
+        nodeMap.set(row.id, {
+    const connectedIds = new Set();
+    edges.forEach(e => {
+      connectedIds.add(e.data.source);
+      connectedIds.add(e.data.target);
+    });
+
+    const parentIds = new Set();
+    for (const id of connectedIds) {
+      let parent = id.includes('.') ? id.substring(0, id.lastIndexOf('.')) : null;
+      while (parent) {
+        parentIds.add(parent);
+        parent = parent.includes('.') ? parent.substring(0, parent.lastIndexOf('.')) : null;
+      }
+    }
+
     const nodes = [];
-    const edges = [];
+    for (const [id, node] of nodeMap) {
+      if (connectedIds.has(id) || parentIds.has(id)) {
+        nodes.push(node);
+      }
+    }
+
+      // Force-directed layout with tighter spacing
+      layout: {
+        name: 'cose',
+        padding: 30,
+        fit: true,
+        nodeRepulsion: 8000,
+        idealEdgeLength: 100,
+        animate: false
+      }
+    cy.fit();
+
 
     parsed.data.forEach((row) => {
       const trend = (row.trend || "").toLowerCase();
