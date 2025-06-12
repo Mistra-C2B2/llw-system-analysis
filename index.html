@@ -38,15 +38,21 @@
                 if(e.source) nodesWithEdges.add(e.source);
                 if(e.target) nodesWithEdges.add(e.target);
             });
-            // Determine parent nodes
+            // Determine parent/child relationships
+            const nodeIds = new Set(rawNodes.map(n => n.id));
             const parents = new Set();
             rawNodes.forEach(n => {
-                rawNodes.forEach(m => {
-                    if(m.id.startsWith(n.id + '.')) parents.add(n.id);
-                });
+                const parts = n.id.split('.');
+                if(parts.length > 1) {
+                    const pid = parts.slice(0, -1).join('.');
+                    if(nodeIds.has(pid)) {
+                        n.parent = pid;
+                        parents.add(pid);
+                    }
+                }
             });
             // Filter nodes
-            const nodes = rawNodes.filter(n => nodesWithEdges.has(n.id) || parents.has(n.id));
+            const nodes = rawNodes.filter(n => nodesWithEdges.has(n.id) || parents.has(n.id) || n.parent);
             // Build cytoscape elements
             const elements = [];
             nodes.forEach(n => {
@@ -55,6 +61,7 @@
                     group: 'nodes',
                     data: {
                         id: n.id,
+                        parent: n.parent,
                         label: n.label,
                         displayLabel: n.id + ' ' + n.label,
                         description: n.description,
@@ -106,11 +113,21 @@
                             'shape': 'roundrectangle',
                             'background-color': 'data(color)',
                             'label': 'data(displayLabel)',
+                            'width': 'label',
+                            'height': 'label',
                             'text-wrap': 'wrap',
+                            'text-max-width': 100,
                             'text-valign': 'center',
                             'text-halign': 'center',
                             'padding': '10px',
                             'color': '#000'
+                        }
+                    },
+                    {
+                        selector: ':parent',
+                        style: {
+                            'background-opacity': 0.1,
+                            'padding': '20px'
                         }
                     },
                     {
