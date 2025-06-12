@@ -145,7 +145,15 @@
                         }
                     }
                 ],
-                layout: { name: 'breadthfirst', directed: true, padding: 10 }
+                layout: {
+                    name: 'cose',
+                    nodeRepulsion: 10000,
+                    nodeOverlap: 10,
+                    idealEdgeLength: 100,
+                    edgeElasticity: 100,
+                    gravity: 80,
+                    padding: 30
+                }
             });
 
             // Tooltips
