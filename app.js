@@ -2,8 +2,12 @@
 async function init() {
   try {
     const nodeMap = new Map();
-        nodeMap.set(row.id, {
-    const connectedIds = new Set();
+      let color = 'bg-gray-300';
+      if (trend.startsWith('pos')) {
+        color = 'bg-green-400';
+      } else if (trend.startsWith('neg')) {
+        color = 'bg-red-400';
+      }
     edges.forEach(e => {
       connectedIds.add(e.data.source);
       connectedIds.add(e.data.target);
