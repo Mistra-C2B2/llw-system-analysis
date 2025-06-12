@@ -1,0 +1,101 @@
+// Fetch and render the CSV as an interactive network
+async function init() {
+  try {
+    const response = await fetch('llw_system_analysis.csv');
+    const csvText = await response.text();
+    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+    const nodes = [];
+    const edges = [];
+
+    parsed.data.forEach(row => {
+      const trend = (row.trend || '').toLowerCase();
+      const color = trend.startsWith('pos') ? 'bg-green-400' :
+                    trend.startsWith('neg') ? 'bg-red-400' : 'bg-gray-300';
+
+      if (row.source && row.target) {
+        edges.push({ data: {
+          id: row.id,
+          source: row.source,
+          target: row.target,
+          label: row.label,
+          description: row.description,
+          trend: row.trend,
+          reliability: row.reliability
+        }});
+      } else {
+        nodes.push({ data: {
+          id: row.id,
+          label: row.label,
+          description: row.description,
+          trend: row.trend,
+          reliability: row.reliability,
+          color
+        }});
+      }
+    });
+
+    const cy = cytoscape({
+      container: document.getElementById('cy'),
+      elements: { nodes, edges },
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'shape': 'round-rectangle',
+            'background-color': 'data(color)',
+            'label': 'data(label)',
+            'text-valign': 'center',
+            'color': '#000',
+            'text-wrap': 'wrap',
+            'text-max-width': 80,
+            'padding': 10,
+            'font-size': 10
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'curve-style': 'bezier',
+            'target-arrow-shape': 'triangle',
+            'width': 2,
+            'line-color': '#999',
+            'target-arrow-color': '#999',
+            'label': 'data(label)',
+            'font-size': 8,
+            'text-background-color': '#fff',
+            'text-background-opacity': 1,
+            'text-background-padding': 2
+          }
+        }
+      ],
+      layout: { name: 'cose', padding: 50 }
+    });
+
+    // Tooltips
+    cy.nodes().forEach(node => {
+      const content = `<strong>${node.data('label')}</strong><br>${node.data('description')}<br>Trend: ${node.data('trend')}<br>Reliability: ${node.data('reliability')}`;
+      const ref = node.popperRef();
+      const dummy = ref.getBoundingClientRect;
+      ref.getBoundingClientRect = () => ({
+        width: 0,
+        height: 0,
+        top: node.renderedPosition('y'),
+        left: node.renderedPosition('x'),
+        right: node.renderedPosition('x'),
+        bottom: node.renderedPosition('y')
+      });
+      const tip = tippy(document.createElement('div'), {
+        getReferenceClientRect: ref.getBoundingClientRect,
+        trigger: 'manual',
+        content,
+        placement: 'bottom'
+      });
+      node.on('mouseover', () => tip.show());
+      node.on('mouseout', () => tip.hide());
+    });
+  } catch (err) {
+    console.error('Failed to load CSV', err);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
