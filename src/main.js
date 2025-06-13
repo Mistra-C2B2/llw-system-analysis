@@ -1,173 +1,204 @@
-import cytoscape from 'cytoscape';
-import fcose from 'cytoscape-fcose';
-import popper from 'cytoscape-popper';
-import tippy from 'tippy.js';
-import 'tippy.js/dist/tippy.css';
-import { parse } from 'papaparse';
-import '@popperjs/core';
+import cytoscape from "cytoscape";
+import cola from "cytoscape-cola";
+import popper from "cytoscape-popper";
+import tippy from "tippy.js";
+import "tippy.js/dist/tippy.css";
+import { parse } from "papaparse";
+import "@popperjs/core";
 
-cytoscape.use(fcose);
+cytoscape.use(cola);
 cytoscape.use(popper);
 
+const colaLayout = {
+  name: "cola",
+  nodeSpacing: function (node) {
+    return 30;
+  }, // space between nodes
+  edgeLength: function (edge) {
+    return 80;
+  }, // distance between connected nodes
+  avoidOverlap: true, // prevent overlaps
+  randomize: false, // start from deterministic positions
+  maxSimulationTime: 5000, // how long to run (ms)
+  unconstrIter: 20, // unconstrained iterations
+  userConstIter: 20, // iterations to respect constraints
+  allConstIter: 20, // full constraint iterations
+};
+
 async function loadData() {
-    const csvText = await fetch('llw_system_analysis.csv').then(r => r.text());
-    const parsed = parse(csvText, { header: true }).data;
-    const rawNodes = [];
-    const edges = [];
-    parsed.forEach(row => {
-        if (!row.id) return;
-        if (row.id.includes('-')) {
-            edges.push(row);
-        } else {
-            rawNodes.push(row);
-        }
+  const csvText = await fetch("llw_system_analysis.csv").then((r) => r.text());
+  const parsed = parse(csvText, { header: true }).data;
+  const rawNodes = [];
+  const edges = [];
+  parsed.forEach((row) => {
+    if (!row.id) return;
+    if (row.id.includes("-")) {
+      edges.push(row);
+    } else {
+      rawNodes.push(row);
+    }
+  });
+  const nodesWithEdges = new Set();
+  edges.forEach((e) => {
+    if (e.source) nodesWithEdges.add(e.source);
+    if (e.target) nodesWithEdges.add(e.target);
+  });
+  const nodeIds = new Set(rawNodes.map((n) => n.id));
+  const parents = new Set();
+  rawNodes.forEach((n) => {
+    const parts = n.id.split(".");
+    if (parts.length > 1) {
+      const pid = parts.slice(0, -1).join(".");
+      if (nodeIds.has(pid)) {
+        n.parent = pid;
+        parents.add(pid);
+      }
+    }
+  });
+  const nodes = rawNodes.filter(
+    (n) => nodesWithEdges.has(n.id) || parents.has(n.id) || n.parent
+  );
+  const elements = [];
+  nodes.forEach((n) => {
+    const color =
+      n.trend === "positive"
+        ? "#4ade80"
+        : n.trend === "negative"
+        ? "#f87171"
+        : "#d1d5db";
+    elements.push({
+      group: "nodes",
+      data: {
+        id: n.id,
+        parent: n.parent,
+        label: n.label,
+        displayLabel: n.id + " " + n.label,
+        description: n.description,
+        trend: n.trend,
+        reliability: n.reliability,
+        references: n.references,
+        reviewers: n.reviewers,
+        organisation: n.organisation,
+        mandate: n.mandate,
+        comments: n.comments,
+        color: color,
+      },
     });
-    const nodesWithEdges = new Set();
-    edges.forEach(e => {
-        if (e.source) nodesWithEdges.add(e.source);
-        if (e.target) nodesWithEdges.add(e.target);
+  });
+  edges.forEach((e) => {
+    if (!e.source || !e.target) return;
+    const color =
+      e.trend === "positive"
+        ? "#4ade80"
+        : e.trend === "negative"
+        ? "#f87171"
+        : "#d1d5db";
+    elements.push({
+      group: "edges",
+      data: {
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        label: e.label,
+        displayLabel: e.id + " " + e.label,
+        description: e.description,
+        trend: e.trend,
+        reliability: e.reliability,
+        references: e.references,
+        reviewers: e.reviewers,
+        organisation: e.organisation,
+        mandate: e.mandate,
+        comments: e.comments,
+        color: color,
+      },
     });
-    const nodeIds = new Set(rawNodes.map(n => n.id));
-    const parents = new Set();
-    rawNodes.forEach(n => {
-        const parts = n.id.split('.');
-        if (parts.length > 1) {
-            const pid = parts.slice(0, -1).join('.');
-            if (nodeIds.has(pid)) {
-                n.parent = pid;
-                parents.add(pid);
-            }
-        }
-    });
-    const nodes = rawNodes.filter(n => nodesWithEdges.has(n.id) || parents.has(n.id) || n.parent);
-    const elements = [];
-    nodes.forEach(n => {
-        const color = n.trend === 'positive' ? '#4ade80' : (n.trend === 'negative' ? '#f87171' : '#d1d5db');
-        elements.push({
-            group: 'nodes',
-            data: {
-                id: n.id,
-                parent: n.parent,
-                label: n.label,
-                displayLabel: n.id + ' ' + n.label,
-                description: n.description,
-                trend: n.trend,
-                reliability: n.reliability,
-                references: n.references,
-                reviewers: n.reviewers,
-                organisation: n.organisation,
-                mandate: n.mandate,
-                comments: n.comments,
-                color: color
-            }
-        });
-    });
-    edges.forEach(e => {
-        if (!e.source || !e.target) return;
-        const color = e.trend === 'positive' ? '#4ade80' : (e.trend === 'negative' ? '#f87171' : '#d1d5db');
-        elements.push({
-            group: 'edges',
-            data: {
-                id: e.id,
-                source: e.source,
-                target: e.target,
-                label: e.label,
-                displayLabel: e.id + ' ' + e.label,
-                description: e.description,
-                trend: e.trend,
-                reliability: e.reliability,
-                references: e.references,
-                reviewers: e.reviewers,
-                organisation: e.organisation,
-                mandate: e.mandate,
-                comments: e.comments,
-                color: color
-            }
-        });
-    });
-    renderGraph(elements);
+  });
+  renderGraph(elements);
 }
 
 function renderGraph(elements) {
-    const cy = cytoscape({
-        container: document.getElementById('cy'),
-        elements: elements,
-        style: [
-            {
-                selector: 'node',
-                style: {
-                    'shape': 'roundrectangle',
-                    'background-color': 'data(color)',
-                    'label': 'data(displayLabel)',
-                    'width': 'label',
-                    'height': 'label',
-                    'text-wrap': 'wrap',
-                    'text-max-width': 100,
-                    'text-valign': 'center',
-                    'text-halign': 'center',
-                    'padding': '10px',
-                    'color': '#000'
-                }
-            },
-            {
-                selector: ':parent',
-                style: {
-                    'background-opacity': 0.1,
-                    'padding': '20px'
-                }
-            },
-            {
-                selector: 'edge',
-                style: {
-                    'width': 2,
-                    'line-color': 'data(color)',
-                    'target-arrow-color': 'data(color)',
-                    'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier',
-                    'label': 'data(displayLabel)',
-                    'text-background-color': '#fff',
-                    'text-background-opacity': 1,
-                    'text-background-padding': '2px'
-                }
-            }
-        ],
-        layout: {
-            name: 'fcose',
-            nodeRepulsion: 4500,
-            idealEdgeLength: 100,
-            nodeSeparation: 75,
-            gravity: 0.25,
-            gravityRange: 3.8,
-            gravityCompound: 1.0,
-            padding: 30
-        }
-    });
+  const cy = cytoscape({
+    container: document.getElementById("cy"),
+    elements: elements,
+    style: [
+      {
+        selector: "node",
+        style: {
+          shape: "rectangle",
+          "background-color": "data(color)",
+          label: "data(displayLabel)",
+          width: "label",
+          height: "label",
+          "text-wrap": "wrap",
+          "text-max-width": 100,
+          "text-valign": "center",
+          "text-halign": "center",
+          padding: "10px",
+          color: "#000",
+        },
+      },
+      {
+        selector: ":parent",
+        style: {
+          shape: "rectangle",
+          "text-valign": "top",
+          "text-max-width": 200,
+          "background-opacity": 0.1,
+          padding: "20px",
+        },
+      },
+      {
+        selector: "edge",
+        style: {
+          width: 2,
+          "line-color": "data(color)",
+          "target-arrow-color": "data(color)",
+          "target-arrow-shape": "triangle",
+          "curve-style": "bezier",
+          label: "",
+          "text-background-color": "#fff",
+          "text-background-opacity": 1,
+          "text-background-padding": "2px",
+        },
+      },
+    ],
+    layout: colaLayout,
+  });
 
-    cy.elements().forEach(el => {
-        const d = el.data();
-        const content = `<div><strong>${d.label}</strong><br>${d.description || ''}<br>Trend: ${d.trend || ''}<br>Reliability: ${d.reliability || ''}</div>`;
-        tippy(el.popperRef(), { content, trigger: 'mouseenter', placement: 'bottom', hideOnClick: false });
+  cy.elements().forEach((el) => {
+    const d = el.data();
+    const content = `<div><strong>${d.label}</strong><br>${
+      d.description || ""
+    }<br>Trend: ${d.trend || ""}<br>Reliability: ${d.reliability || ""}</div>`;
+    tippy(el.popperRef(), {
+      content,
+      trigger: "mouseenter",
+      placement: "bottom",
+      hideOnClick: false,
     });
+  });
 
-    const sidebar = document.getElementById('sidebar');
-    function showInfo(d) {
-        sidebar.innerHTML = `
+  const sidebar = document.getElementById("sidebar");
+  function showInfo(d) {
+    sidebar.innerHTML = `
             <h2 class="text-xl font-bold mb-2">${d.label}</h2>
-            <p><strong>Description:</strong> ${d.description || ''}</p>
-            <p><strong>Trend:</strong> ${d.trend || ''}</p>
-            <p><strong>Reliability:</strong> ${d.reliability || ''}</p>
-            <p><strong>References:</strong> ${d.references || ''}</p>
-            <p><strong>Reviewers:</strong> ${d.reviewers || ''}</p>
-            <p><strong>Organisation:</strong> ${d.organisation || ''}</p>
-            <p><strong>Mandate:</strong> ${d.mandate || ''}</p>
-            <p><strong>Comments:</strong> ${d.comments || ''}</p>
+            <p><strong>Description:</strong> ${d.description || ""}</p>
+            <p><strong>Trend:</strong> ${d.trend || ""}</p>
+            <p><strong>Reliability:</strong> ${d.reliability || ""}</p>
+            <p><strong>References:</strong> ${d.references || ""}</p>
+            <p><strong>Reviewers:</strong> ${d.reviewers || ""}</p>
+            <p><strong>Organisation:</strong> ${d.organisation || ""}</p>
+            <p><strong>Mandate:</strong> ${d.mandate || ""}</p>
+            <p><strong>Comments:</strong> ${d.comments || ""}</p>
         `;
-        sidebar.classList.remove('hidden');
-    }
+    sidebar.classList.remove("hidden");
+  }
 
-    cy.on('tap', 'node', evt => showInfo(evt.target.data()));
-    cy.on('tap', 'edge', evt => showInfo(evt.target.data()));
-    cy.on('tap', evt => { if (evt.target === cy) sidebar.classList.add('hidden'); });
+  cy.on("tap", "node", (evt) => showInfo(evt.target.data()));
+  cy.on("tap", "edge", (evt) => showInfo(evt.target.data()));
+  cy.on("tap", (evt) => {
+    if (evt.target === cy) sidebar.classList.add("hidden");
+  });
 }
 
 loadData();
