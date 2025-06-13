@@ -1,13 +1,8 @@
 import cytoscape from "cytoscape";
 import cola from "cytoscape-cola";
-import popper from "cytoscape-popper";
-import tippy from "tippy.js";
-import "tippy.js/dist/tippy.css";
 import { parse } from "papaparse";
-import "@popperjs/core";
 
 cytoscape.use(cola);
-cytoscape.use(popper);
 
 const colaLayout = {
   name: "cola",
@@ -20,9 +15,6 @@ const colaLayout = {
   avoidOverlap: true, // prevent overlaps
   randomize: false, // start from deterministic positions
   maxSimulationTime: 5000, // how long to run (ms)
-  unconstrIter: 20, // unconstrained iterations
-  userConstIter: 20, // iterations to respect constraints
-  allConstIter: 20, // full constraint iterations
 };
 
 async function loadData() {
@@ -135,6 +127,7 @@ function renderGraph(elements) {
           "text-halign": "center",
           padding: "10px",
           color: "#000",
+          "z-index": 10,
         },
       },
       {
@@ -142,9 +135,15 @@ function renderGraph(elements) {
         style: {
           shape: "rectangle",
           "text-valign": "top",
-          "text-max-width": 200,
+          "text-halign": "center",
+          "text-margin-y": -10,
+          "text-max-width": 300,
           "background-opacity": 0.1,
-          padding: "20px",
+          padding: "10px",
+          "font-weight": "bold",
+          "font-size": "18px",
+          label: "data(displayLabel)",
+          "z-index": 11,
         },
       },
       {
@@ -154,50 +153,65 @@ function renderGraph(elements) {
           "line-color": "data(color)",
           "target-arrow-color": "data(color)",
           "target-arrow-shape": "triangle",
-          "curve-style": "bezier",
           label: "",
           "text-background-color": "#fff",
           "text-background-opacity": 1,
           "text-background-padding": "2px",
+          "z-index": 1,
         },
       },
     ],
     layout: colaLayout,
   });
 
-  cy.elements().forEach((el) => {
-    const d = el.data();
-    const content = `<div><strong>${d.label}</strong><br>${
-      d.description || ""
-    }<br>Trend: ${d.trend || ""}<br>Reliability: ${d.reliability || ""}</div>`;
-    tippy(el.popperRef(), {
-      content,
-      trigger: "mouseenter",
-      placement: "bottom",
-      hideOnClick: false,
-    });
-  });
-
   const sidebar = document.getElementById("sidebar");
   function showInfo(d) {
     sidebar.innerHTML = `
-            <h2 class="text-xl font-bold mb-2">${d.label}</h2>
-            <p><strong>Description:</strong> ${d.description || ""}</p>
-            <p><strong>Trend:</strong> ${d.trend || ""}</p>
-            <p><strong>Reliability:</strong> ${d.reliability || ""}</p>
-            <p><strong>References:</strong> ${d.references || ""}</p>
-            <p><strong>Reviewers:</strong> ${d.reviewers || ""}</p>
-            <p><strong>Organisation:</strong> ${d.organisation || ""}</p>
-            <p><strong>Mandate:</strong> ${d.mandate || ""}</p>
-            <p><strong>Comments:</strong> ${d.comments || ""}</p>
-        `;
+      <div class="space-y-4">
+        <h2 class="text-xl font-bold mb-4">${d.label}</h2>
+        ${
+          d.description
+            ? `<p class="mb-3"><strong>Description:</strong><br/>${d.description}</p>`
+            : ""
+        }
+        ${d.trend ? `<p><strong>Trend:</strong> ${d.trend}</p>` : ""}
+        ${
+          d.reliability
+            ? `<p><strong>Reliability:</strong> ${d.reliability}</p>`
+            : ""
+        }
+        ${
+          d.references
+            ? `<p><strong>References:</strong><br/>${d.references}</p>`
+            : ""
+        }
+        ${
+          d.reviewers ? `<p><strong>Reviewers:</strong> ${d.reviewers}</p>` : ""
+        }
+        ${
+          d.organisation
+            ? `<p><strong>Organisation:</strong> ${d.organisation}</p>`
+            : ""
+        }
+        ${d.mandate ? `<p><strong>Mandate:</strong> ${d.mandate}</p>` : ""}
+        ${
+          d.comments
+            ? `<p><strong>Comments:</strong><br/>${d.comments}</p>`
+            : ""
+        }
+      </div>
+    `;
     sidebar.classList.remove("hidden");
   }
 
   cy.on("tap", "node", (evt) => showInfo(evt.target.data()));
   cy.on("tap", "edge", (evt) => showInfo(evt.target.data()));
+
+  // Close sidebar when clicking background
   cy.on("tap", (evt) => {
-    if (evt.target === cy) sidebar.classList.add("hidden");
+    if (evt.target === cy) {
+      sidebar.classList.add("hidden");
+    }
   });
 }
 
