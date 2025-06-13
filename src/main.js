@@ -165,7 +165,10 @@ function renderGraph(elements) {
   });
 
   const sidebar = document.getElementById("sidebar");
+
   function showInfo(d) {
+    console.log("Showing info for:", d);
+    sidebar.style.display = "block";
     sidebar.innerHTML = `
       <div class="space-y-4">
         <h2 class="text-xl font-bold mb-4">${d.label}</h2>
@@ -201,7 +204,6 @@ function renderGraph(elements) {
         }
       </div>
     `;
-    sidebar.classList.remove("hidden");
   }
 
   cy.on("tap", "node", (evt) => showInfo(evt.target.data()));
@@ -210,7 +212,7 @@ function renderGraph(elements) {
   // Close sidebar when clicking background
   cy.on("tap", (evt) => {
     if (evt.target === cy) {
-      sidebar.classList.add("hidden");
+      sidebar.style.display = "none";
     }
   });
 }
