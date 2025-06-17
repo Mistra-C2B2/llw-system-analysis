@@ -10,4 +10,3 @@ This project now uses [Vite](https://vitejs.dev/) for the build/dev server. Afte
 npm install
 npm run dev
 ```
-

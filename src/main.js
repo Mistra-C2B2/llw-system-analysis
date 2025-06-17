@@ -218,6 +218,52 @@ function renderGraph(elements) {
 
   const sidebar = document.getElementById("sidebar");
 
+  // Show initial sidebar content
+  function showInitialSidebar() {
+    sidebar.style.display = "block";
+    sidebar.innerHTML = `
+      <div class="pt-6 mb-4 flex flex-col items-center">
+      <img src="C2B2-logo.svg" alt="Logo" class="w-60 mb-2" />
+      <h1 class="text-2xl font-extrabold text-white-800 leading-tight text-center">Living Lab West</h1>
+      <div class="text-2xl font-bold text-white-500 font-medium text-center">Systemanalys</div>
+      </div>
+      <div class="mb-4">
+      <p class="text-white-700 text-base">
+        <span class="font-semibold">Välkommen!</span> Utforska systemets komponenter och relationer genom att klicka på noder eller kanter i grafen.
+      </p>
+      </div>
+      <ul class="list-inside list-disc text-white-700 space-y-2 text-sm">
+      <li><span class="font-medium">Noder</span> representerar systemkomponenter</li>
+      <li>
+        <span class="font-medium">Kanter</span> visar relationer:
+        <ul class="ml-6 mt-1 space-y-1">
+        <li>
+          <span class="inline-block w-3 h-3 rounded-full bg-green-300 align-middle mr-1"></span>
+          <span class="text-green-300">Positiv effekt</span>
+        </li>
+        <li>
+          <span class="inline-block w-3 h-3 rounded-full bg-yellow-300 align-middle mr-1"></span>
+          <span class="text-yellow-300">Otydlig effekt</span>
+        </li>
+        <li>
+          <span class="inline-block w-3 h-3 rounded-full bg-red-300 align-middle mr-1"></span>
+          <span class="text-red-300">Negativ effekt</span>
+        </li>
+        </ul>
+      </li>
+      <li><span class="font-medium">Färgade grupper</span> visar hierarkisk struktur</li>
+      </ul>
+      <div class="flex-grow"></div>
+      <div class="mt-6 text-xs text-white/40 text-right sticky bottom-0">
+      &copy; ${new Date().getFullYear()} Mistra Co-Creating Better Blue.
+      </div>
+    `;
+    // Ensure sidebar uses flex layout with column direction and full height
+    sidebar.style.display = "flex";
+    sidebar.style.flexDirection = "column";
+    sidebar.style.height = "100%";
+  }
+
   // Add styles for highlighted and faded elements
   cy.style()
     .selector(".highlighted")
@@ -249,6 +295,21 @@ function renderGraph(elements) {
     })
     .update();
 
+  function fitElementsToViewport(elements) {
+    // If only one node is selected, use larger padding
+    let padding = 100;
+    if (elements.length === 1 && elements[0].isNode && elements[0].isNode()) {
+      padding = 300;
+    }
+    cy.animate({
+      fit: {
+        eles: elements,
+        padding: padding,
+      },
+      duration: 500,
+    });
+  }
+
   function highlightConnected(element) {
     // Clear previous highlights
     cy.elements().removeClass("highlighted faded");
@@ -274,13 +335,7 @@ function renderGraph(elements) {
       });
 
       // Fit the view to show the edge and connected nodes
-      cy.animate({
-        fit: {
-          eles: neighborhood,
-          padding: 50, // Add some padding around the elements
-        },
-        duration: 500, // Animation duration in milliseconds
-      });
+      fitElementsToViewport(neighborhood);
     } else if (element.isParent()) {
       // For compound nodes
 
@@ -306,13 +361,7 @@ function renderGraph(elements) {
       neighborhood = neighborhood.add(neighborhood.edgesWith(neighborhood));
 
       // Fit the view to show the edge and connected nodes
-      cy.animate({
-        fit: {
-          eles: neighborhood,
-          padding: 50, // Add some padding around the elements
-        },
-        duration: 500, // Animation duration in milliseconds
-      });
+      fitElementsToViewport(neighborhood);
     } else {
       // For regular nodes
       neighborhood = element.neighborhood().add(element);
@@ -325,13 +374,7 @@ function renderGraph(elements) {
       });
 
       // Fit the view to show the edge and connected nodes
-      cy.animate({
-        fit: {
-          eles: neighborhood,
-          padding: 50, // Add some padding around the elements
-        },
-        duration: 500, // Animation duration in milliseconds
-      });
+      fitElementsToViewport(neighborhood);
     }
 
     // Fade all elements
@@ -349,40 +392,98 @@ function renderGraph(elements) {
   }
 
   function showInfo(d) {
-    sidebar.style.display = "block";
     sidebar.innerHTML = `
-      <div class="space-y-4">
-        <h2 class="text-xl font-bold mb-4">${d.label}</h2>
+      <div class="flex flex-col h-full">
+      <div class="mb-6">
+        <h2 class="text-2xl font-extrabold text-white mb-2">${
+          d.label || "Detaljer"
+        }</h2>
+        <div class="text-xs text-white/70">${d.displayLabel || ""}</div>
+      </div>
+      <div class="space-y-4 flex-1">
         ${
           d.description
-            ? `<p class="mb-3"><strong>Beskrivning:</strong><br/>${d.description}</p>`
+            ? `<div>
+            <div class="font-semibold text-white mb-1">Beskrivning</div>
+            <div class="text-white/90 text-sm leading-relaxed">${d.description}</div>
+          </div>`
             : ""
         }
-        ${d.trend ? `<p><strong>Trend:</strong> ${d.trend}</p>` : ""}
+        ${
+          d.trend
+            ? `<div>
+            <span class="font-semibold text-white">Trend:</span>
+            <span class="inline-block ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+              d.trend === "positive"
+                ? "bg-green-100 text-green-700"
+                : d.trend === "negative"
+                ? "bg-red-100 text-red-700"
+                : "bg-yellow-100 text-yellow-700"
+            }">${d.trend.charAt(0).toUpperCase() + d.trend.slice(1)}</span>
+          </div>`
+            : ""
+        }
         ${
           d.reliability
-            ? `<p><strong>Tillförlitlighet:</strong> ${d.reliability}</p>`
+            ? `<div>
+            <span class="font-semibold text-white">Tillförlitlighet:</span>
+            <span class="inline-block ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+              d.reliability.toLowerCase() === "hög"
+                ? "bg-green-100 text-green-700"
+                : d.reliability.toLowerCase() === "medel"
+                ? "bg-yellow-100 text-yellow-700"
+                : d.reliability.toLowerCase() === "låg"
+                ? "bg-red-100 text-red-700"
+                : "bg-gray-100 text-gray-700"
+            }">${d.reliability}</span>
+          </div>`
             : ""
         }
         ${
           d.references
-            ? `<p><strong>Referencser:</strong><br/>${d.references}</p>`
+            ? `<div>
+            <div class="font-semibold text-white mb-1">Referenser</div>
+            <div class="text-white/80 text-xs whitespace-pre-line">${d.references}</div>
+          </div>`
             : ""
         }
         ${
-          d.reviewers ? `<p><strong>Granskare:</strong> ${d.reviewers}</p>` : ""
+          d.reviewers
+            ? `<div>
+            <span class="font-semibold text-white">Granskare:</span>
+            <span class="ml-2 text-white/90">${d.reviewers}</span>
+          </div>`
+            : ""
         }
         ${
           d.organisation
-            ? `<p><strong>Organisation:</strong> ${d.organisation}</p>`
+            ? `<div>
+            <span class="font-semibold text-white">Organisation:</span>
+            <span class="ml-2 text-white/90">${d.organisation}</span>
+          </div>`
             : ""
         }
-        ${d.mandate ? `<p><strong>Mandat:</strong> ${d.mandate}</p>` : ""}
+        ${
+          d.mandate
+            ? `<div>
+            <span class="font-semibold text-white">Mandat:</span>
+            <span class="ml-2 text-white/90">${d.mandate}</span>
+          </div>`
+            : ""
+        }
         ${
           d.comments
-            ? `<p><strong>Kommentarer:</strong><br/>${d.comments}</p>`
+            ? `<div>
+            <div class="font-semibold text-white mb-1">Kommentarer</div>
+            <div class="text-white/80 text-xs whitespace-pre-line">${d.comments}</div>
+          </div>`
             : ""
         }
+      </div>
+      <div class="flex-grow"></div>
+      <div class="mt-8 text-xs text-white/40 text-right">
+        &copy; ${new Date().getFullYear()} Mistra Co-Creating Better Blue.
+      </div>
       </div>
     `;
   }
@@ -404,9 +505,9 @@ function renderGraph(elements) {
   cy.on("tap", (evt) => {
     if (evt.target === cy) {
       highlightConnected(null);
-      sidebar.style.display = "none";
+      showInitialSidebar(); // Show welcome message
 
-      // Animate to fit all elements in view
+      // Animate to fit all elements in view, accounting for sidebar
       cy.animate({
         fit: {
           eles: cy.elements(),
@@ -416,6 +517,9 @@ function renderGraph(elements) {
       });
     }
   });
+
+  // Show initial sidebar on load
+  showInitialSidebar();
 }
 
 loadData();
