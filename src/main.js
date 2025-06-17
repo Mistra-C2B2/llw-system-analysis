@@ -1,12 +1,17 @@
 import cytoscape from "cytoscape";
 import cola from "cytoscape-cola";
 import { parse } from "papaparse";
-const csvData = await fetch("/llw_system_analysis.csv").then((response) =>
-  response.text()
-);
+
 const logo = "/C2B2-logo.svg";
+let csvData = null;
 
 cytoscape.use(cola);
+
+async function initializeCsvData() {
+  csvData = await fetch("/llw_system_analysis.csv").then((response) =>
+    response.text()
+  );
+}
 
 const colaLayout = {
   name: "cola",
@@ -524,8 +529,31 @@ function renderGraph(elements) {
   // Show initial sidebar on load
 }
 
-// Show initial sidebar immediately
-showInitialSidebar();
+// Initialize the application
+async function initializeApp() {
+  // Show initial sidebar immediately
+  showInitialSidebar();
+
+  // Load CSV data
+  await initializeCsvData();
+
+  // Load and process the graph data
+  await loadData();
+
+  // Update sidebar after data is loaded
+  showInitialSidebar();
+}
+
+// Start the application
+initializeApp().catch((error) => {
+  console.error("Failed to initialize the application:", error);
+  document.getElementById("sidebar").innerHTML = `
+    <div class="p-4 text-red-600">
+      <h2 class="text-lg font-bold">Error</h2>
+      <p>Failed to load data. Please try refreshing the page.</p>
+    </div>
+  `;
+});
 
 // Call loadData and show initial sidebar content again after data is loaded
 loadData().then(() => {
