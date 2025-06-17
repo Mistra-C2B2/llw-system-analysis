@@ -11,4 +11,3 @@ npm install
 npm run dev
 ```
 
-The built files will be generated in `dist/` with `npm run build`.

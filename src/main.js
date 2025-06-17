@@ -10,10 +10,10 @@ const colaLayout = {
     return 30;
   }, // space between nodes
   edgeLength: function (edge) {
-    return 2080;
+    return 280;
   }, // distance between connected nodes
   avoidOverlap: true, // prevent overlaps
-  randomize: false, // start from deterministic positions
+  randomize: true, // start from deterministic positions
   maxSimulationTime: 500, // how long to run (ms)
 };
 
@@ -131,7 +131,7 @@ async function loadData() {
         ? "#4ade80"
         : e.trend === "negative"
         ? "#f87171"
-        : "#d1d5db";
+        : "#FFD34E"; // Mustard yellow for neutral trends
     elements.push({
       group: "edges",
       data: {
@@ -174,7 +174,7 @@ function renderGraph(elements) {
           "text-halign": "center",
           padding: "10px",
           color: "#000",
-          "z-index": 10,
+          "z-index": 100,
         },
       },
       {
@@ -185,12 +185,15 @@ function renderGraph(elements) {
           "text-halign": "center",
           "text-margin-y": -10,
           "text-max-width": 300,
-          "background-opacity": 0.1,
+          "background-opacity": 0.2,
           padding: "10px",
           "font-weight": "bold",
           "font-size": "18px",
+          "border-color": "data(color)",
+          "border-width": 2,
+          "border-style": "solid",
           label: "data(displayLabel)",
-          "z-index": 11,
+          "z-index": 10,
         },
       },
       {
@@ -220,65 +223,149 @@ function renderGraph(elements) {
     .selector(".highlighted")
     .style({
       "background-color": "data(color)",
-      "line-color": "data(color)",
-      "target-arrow-color": "data(color)",
-      opacity: 1,
-      "z-index": 999,
+      "background-opacity": 1,
+      "z-compound-depth": "top",
+    })
+    .selector(".highlighted.parent")
+    .style({
+      "background-opacity": 0.2, // Make compound node background visible when highlighted
+      "background-color": "data(color)",
+      "border-color": "data(color)",
+      "border-opacity": 1,
+      "z-compound-depth": "top",
     })
     .selector(".faded")
     .style({
-      opacity: 0.2,
-      "z-index": 0,
+      "background-opacity": 0.2,
+      "background-color": "#d1d5db", // Light gray for faded elements
+      "border-opacity": 0.2,
+      "border-color": "#d1d5db", // Light gray for faded elements
+      "edge-opacity": 0.2,
+      "line-color": "#d1d5db", // Light gray for faded edges
+      "target-arrow-color": "#d1d5db", // Light gray for faded edges
+      "text-opacity": 0.2,
+      "text-color": "#d1d5db", // Dark gray for faded text
+      "z-compound-depth": "bottom",
     })
     .update();
 
-  function highlightConnected(node) {
+  function highlightConnected(element) {
     // Clear previous highlights
     cy.elements().removeClass("highlighted faded");
 
-    // If no node is selected, reset the view
-    if (!node) {
+    // If no element is selected, reset the view
+    if (!element) {
       return;
     }
 
-    // Get all directly connected elements
-    let neighborhood = node.neighborhood().add(node);
+    let neighborhood;
 
-    // Add compound parent if exists
-    if (node.parent().length > 0) {
-      const parent = node.parent();
-      neighborhood = neighborhood.add(parent);
-      // Add all siblings (other nodes with same parent)
-      neighborhood = neighborhood.add(parent.children());
-    }
+    if (element.isEdge()) {
+      // For edges, highlight the edge and its connected nodes
+      neighborhood = element.connectedNodes().add(element);
 
-    // Add compound children if node is compound
-    if (node.isParent()) {
-      neighborhood = neighborhood.add(node.children());
-    }
+      // Add all children of connected nodes
+      const connectedCompounds = element.connectedNodes().children();
+      neighborhood = neighborhood.add(connectedCompounds);
 
-    // Add edges connected to parent or children
-    if (node.parent().length > 0) {
-      neighborhood = neighborhood.add(node.parent().connectedEdges());
-    }
-    if (node.isParent()) {
-      neighborhood = neighborhood.add(node.children().connectedEdges());
-    }
+      // // Add all children of connected compound nodes
+      connectedCompounds.forEach((compound) => {
+        neighborhood = neighborhood.add(compound.descendants());
+      });
 
-    // Add connecting edges between highlighted nodes
-    neighborhood = neighborhood.add(neighborhood.edgesTo(neighborhood));
-    neighborhood = neighborhood.add(neighborhood.edgesWith(neighborhood));
+      // Fit the view to show the edge and connected nodes
+      cy.animate({
+        fit: {
+          eles: neighborhood,
+          padding: 50, // Add some padding around the elements
+        },
+        duration: 500, // Animation duration in milliseconds
+      });
+    } else if (element.isParent()) {
+      // For compound nodes, highlight complete subgraph
+      // Start with the compound node itself
+      neighborhood = element.add(element.descendants());
+
+      // Get all edges connected to the compound node and its descendants
+      const connectedEdges = neighborhood.connectedEdges();
+      neighborhood = neighborhood.add(connectedEdges);
+
+      // Add all nodes connected to any node in the hierarchy
+      const connectedNodes = connectedEdges.connectedNodes().not(neighborhood);
+      neighborhood = neighborhood.add(connectedNodes);
+
+      // If any connected node is a compound, add its children too
+      connectedNodes.forEach((node) => {
+        if (node.isParent()) {
+          neighborhood = neighborhood.add(node.descendants());
+        }
+      });
+
+      // Add all edges between highlighted nodes
+      neighborhood = neighborhood.add(neighborhood.edgesWith(neighborhood));
+    } else {
+      // For regular nodes
+      neighborhood = element.neighborhood().add(element);
+
+      // Get connected compound parents
+      let connectedCompounds = neighborhood.nodes().parents();
+
+      // Add compound parent if exists
+      if (element.parent().length > 0) {
+        const parent = element.parent();
+        neighborhood = neighborhood.add(parent);
+        neighborhood = neighborhood.add(parent.children());
+      }
+
+      // Add compound children if node is compound
+      if (element.isParent()) {
+        neighborhood = neighborhood.add(element.descendants());
+      }
+
+      // Add all compound parents that are connected through edges
+      neighborhood = neighborhood.add(connectedCompounds);
+
+      connectedCompounds.forEach((compound) => {
+        neighborhood = neighborhood.add(compound.descendants());
+      });
+
+      // Add edges connected to parent or children
+      if (element.parent().length > 0) {
+        neighborhood = neighborhood.add(element.parent().connectedEdges());
+      }
+      if (element.isParent()) {
+        neighborhood = neighborhood.add(element.descendants().connectedEdges());
+      }
+
+      // Add connecting edges between highlighted nodes
+      neighborhood = neighborhood.add(neighborhood.edgesTo(neighborhood));
+      neighborhood = neighborhood.add(neighborhood.edgesWith(neighborhood));
+    }
 
     // Fade all elements
     cy.elements().addClass("faded");
 
     // Highlight the neighborhood
-    neighborhood.removeClass("faded");
-    neighborhood.addClass("highlighted");
+    neighborhood.forEach((node) => {
+      console.log(
+        "Highlighted node/edge id:",
+        node.id(),
+        "isParent:",
+        node.isParent ? node.isParent() : false
+      );
+      node.removeClass("faded");
+      // Highlight the node or edge
+      node.addClass("highlighted");
+      if (node.isParent()) {
+        node.addClass("parent");
+      }
+      console.log(node);
+    });
+    // neighborhood.removeClass("faded");
+    // neighborhood.addClass("highlighted");
   }
 
   function showInfo(d) {
-    console.log("Showing info for:", d);
     sidebar.style.display = "block";
     sidebar.innerHTML = `
       <div class="space-y-4">
@@ -325,7 +412,9 @@ function renderGraph(elements) {
   });
 
   cy.on("tap", "edge", (evt) => {
-    showInfo(evt.target.data());
+    const edge = evt.target;
+    highlightConnected(edge);
+    showInfo(edge.data());
   });
 
   // Clear highlight when clicking background
