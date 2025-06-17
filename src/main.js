@@ -282,8 +282,9 @@ function renderGraph(elements) {
         duration: 500, // Animation duration in milliseconds
       });
     } else if (element.isParent()) {
-      // For compound nodes, highlight complete subgraph
-      // Start with the compound node itself
+      // For compound nodes
+
+      // Add all descendants of the compound node
       neighborhood = element.add(element.descendants());
 
       // Get all edges connected to the compound node and its descendants
@@ -291,7 +292,7 @@ function renderGraph(elements) {
       neighborhood = neighborhood.add(connectedEdges);
 
       // Add all nodes connected to any node in the hierarchy
-      const connectedNodes = connectedEdges.connectedNodes().not(neighborhood);
+      const connectedNodes = connectedEdges.connectedNodes();
       neighborhood = neighborhood.add(connectedNodes);
 
       // If any connected node is a compound, add its children too
@@ -303,43 +304,34 @@ function renderGraph(elements) {
 
       // Add all edges between highlighted nodes
       neighborhood = neighborhood.add(neighborhood.edgesWith(neighborhood));
+
+      // Fit the view to show the edge and connected nodes
+      cy.animate({
+        fit: {
+          eles: neighborhood,
+          padding: 50, // Add some padding around the elements
+        },
+        duration: 500, // Animation duration in milliseconds
+      });
     } else {
       // For regular nodes
       neighborhood = element.neighborhood().add(element);
 
-      // Get connected compound parents
-      let connectedCompounds = neighborhood.nodes().parents();
-
-      // Add compound parent if exists
-      if (element.parent().length > 0) {
-        const parent = element.parent();
-        neighborhood = neighborhood.add(parent);
-        neighborhood = neighborhood.add(parent.children());
-      }
-
-      // Add compound children if node is compound
-      if (element.isParent()) {
-        neighborhood = neighborhood.add(element.descendants());
-      }
-
-      // Add all compound parents that are connected through edges
-      neighborhood = neighborhood.add(connectedCompounds);
-
-      connectedCompounds.forEach((compound) => {
-        neighborhood = neighborhood.add(compound.descendants());
+      // // Add compound children if node is compound
+      neighborhood.forEach((node) => {
+        if (node.isParent()) {
+          neighborhood = neighborhood.add(node.descendants());
+        }
       });
 
-      // Add edges connected to parent or children
-      if (element.parent().length > 0) {
-        neighborhood = neighborhood.add(element.parent().connectedEdges());
-      }
-      if (element.isParent()) {
-        neighborhood = neighborhood.add(element.descendants().connectedEdges());
-      }
-
-      // Add connecting edges between highlighted nodes
-      neighborhood = neighborhood.add(neighborhood.edgesTo(neighborhood));
-      neighborhood = neighborhood.add(neighborhood.edgesWith(neighborhood));
+      // Fit the view to show the edge and connected nodes
+      cy.animate({
+        fit: {
+          eles: neighborhood,
+          padding: 50, // Add some padding around the elements
+        },
+        duration: 500, // Animation duration in milliseconds
+      });
     }
 
     // Fade all elements
@@ -347,22 +339,13 @@ function renderGraph(elements) {
 
     // Highlight the neighborhood
     neighborhood.forEach((node) => {
-      console.log(
-        "Highlighted node/edge id:",
-        node.id(),
-        "isParent:",
-        node.isParent ? node.isParent() : false
-      );
       node.removeClass("faded");
       // Highlight the node or edge
       node.addClass("highlighted");
       if (node.isParent()) {
         node.addClass("parent");
       }
-      console.log(node);
     });
-    // neighborhood.removeClass("faded");
-    // neighborhood.addClass("highlighted");
   }
 
   function showInfo(d) {
@@ -372,32 +355,32 @@ function renderGraph(elements) {
         <h2 class="text-xl font-bold mb-4">${d.label}</h2>
         ${
           d.description
-            ? `<p class="mb-3"><strong>Description:</strong><br/>${d.description}</p>`
+            ? `<p class="mb-3"><strong>Beskrivning:</strong><br/>${d.description}</p>`
             : ""
         }
         ${d.trend ? `<p><strong>Trend:</strong> ${d.trend}</p>` : ""}
         ${
           d.reliability
-            ? `<p><strong>Reliability:</strong> ${d.reliability}</p>`
+            ? `<p><strong>Tillförlitlighet:</strong> ${d.reliability}</p>`
             : ""
         }
         ${
           d.references
-            ? `<p><strong>References:</strong><br/>${d.references}</p>`
+            ? `<p><strong>Referencser:</strong><br/>${d.references}</p>`
             : ""
         }
         ${
-          d.reviewers ? `<p><strong>Reviewers:</strong> ${d.reviewers}</p>` : ""
+          d.reviewers ? `<p><strong>Granskare:</strong> ${d.reviewers}</p>` : ""
         }
         ${
           d.organisation
             ? `<p><strong>Organisation:</strong> ${d.organisation}</p>`
             : ""
         }
-        ${d.mandate ? `<p><strong>Mandate:</strong> ${d.mandate}</p>` : ""}
+        ${d.mandate ? `<p><strong>Mandat:</strong> ${d.mandate}</p>` : ""}
         ${
           d.comments
-            ? `<p><strong>Comments:</strong><br/>${d.comments}</p>`
+            ? `<p><strong>Kommentarer:</strong><br/>${d.comments}</p>`
             : ""
         }
       </div>
@@ -422,6 +405,15 @@ function renderGraph(elements) {
     if (evt.target === cy) {
       highlightConnected(null);
       sidebar.style.display = "none";
+
+      // Animate to fit all elements in view
+      cy.animate({
+        fit: {
+          eles: cy.elements(),
+          padding: 50,
+        },
+        duration: 500,
+      });
     }
   });
 }
