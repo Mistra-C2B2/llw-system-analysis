@@ -1,8 +1,10 @@
 import cytoscape from "cytoscape";
 import cola from "cytoscape-cola";
 import { parse } from "papaparse";
-import csvData from "../llw_system_analysis.csv?raw";
-import logo from "../C2B2-logo.svg";
+const csvData = await fetch("/llw_system_analysis.csv").then((response) =>
+  response.text()
+);
+const logo = "/C2B2-logo.svg";
 
 cytoscape.use(cola);
 
@@ -157,6 +159,51 @@ async function loadData() {
   renderGraph(elements);
 }
 
+// Show initial sidebar content
+function showInitialSidebar() {
+  sidebar.innerHTML = `
+      <div class="pt-6 mb-4 flex flex-col items-center">
+      <img src="${logo}" alt="Logo" class="w-60 mb-2" />
+      <h1 class="text-2xl font-extrabold text-white-800 leading-tight text-center">Living Lab West</h1>
+      <div class="text-2xl font-bold text-white-500 font-medium text-center">Systemanalys</div>
+      </div>
+      <div class="mb-4">
+      <p class="text-white-700 text-base">
+        <span class="font-semibold">Välkommen!</span> Utforska systemets komponenter och relationer genom att klicka på noder eller kanter i grafen.
+      </p>
+      </div>
+      <ul class="list-inside list-disc text-white-700 space-y-2 text-sm">
+      <li><span class="font-medium">Noder</span> representerar systemkomponenter</li>
+      <li>
+        <span class="font-medium">Kanter</span> visar relationer:
+        <ul class="ml-6 mt-1 space-y-1">
+        <li>
+          <span class="inline-block w-3 h-3 rounded-full bg-green-300 align-middle mr-1"></span>
+          <span class="text-green-300">Positiv effekt</span>
+        </li>
+        <li>
+          <span class="inline-block w-3 h-3 rounded-full bg-yellow-300 align-middle mr-1"></span>
+          <span class="text-yellow-300">Otydlig effekt</span>
+        </li>
+        <li>
+          <span class="inline-block w-3 h-3 rounded-full bg-red-300 align-middle mr-1"></span>
+          <span class="text-red-300">Negativ effekt</span>
+        </li>
+        </ul>
+      </li>
+      <li><span class="font-medium">Färgade grupper</span> visar hierarkisk struktur</li>
+      </ul>
+      <div class="flex-grow"></div>
+      <div class="mt-6 text-xs text-white/40 text-right sticky bottom-0">
+      &copy; ${new Date().getFullYear()} Mistra Co-Creating Better Blue.
+      </div>
+    `;
+  // Ensure sidebar uses flex layout with column direction and full height
+  sidebar.style.display = "flex";
+  sidebar.style.flexDirection = "column";
+  sidebar.style.height = "100%";
+}
+
 function renderGraph(elements) {
   const cy = cytoscape({
     container: document.getElementById("cy"),
@@ -219,51 +266,6 @@ function renderGraph(elements) {
   });
 
   const sidebar = document.getElementById("sidebar");
-
-  // Show initial sidebar content
-  function showInitialSidebar() {
-    sidebar.innerHTML = `
-      <div class="pt-6 mb-4 flex flex-col items-center">
-      <img src="${logo}" alt="Logo" class="w-60 mb-2" />
-      <h1 class="text-2xl font-extrabold text-white-800 leading-tight text-center">Living Lab West</h1>
-      <div class="text-2xl font-bold text-white-500 font-medium text-center">Systemanalys</div>
-      </div>
-      <div class="mb-4">
-      <p class="text-white-700 text-base">
-        <span class="font-semibold">Välkommen!</span> Utforska systemets komponenter och relationer genom att klicka på noder eller kanter i grafen.
-      </p>
-      </div>
-      <ul class="list-inside list-disc text-white-700 space-y-2 text-sm">
-      <li><span class="font-medium">Noder</span> representerar systemkomponenter</li>
-      <li>
-        <span class="font-medium">Kanter</span> visar relationer:
-        <ul class="ml-6 mt-1 space-y-1">
-        <li>
-          <span class="inline-block w-3 h-3 rounded-full bg-green-300 align-middle mr-1"></span>
-          <span class="text-green-300">Positiv effekt</span>
-        </li>
-        <li>
-          <span class="inline-block w-3 h-3 rounded-full bg-yellow-300 align-middle mr-1"></span>
-          <span class="text-yellow-300">Otydlig effekt</span>
-        </li>
-        <li>
-          <span class="inline-block w-3 h-3 rounded-full bg-red-300 align-middle mr-1"></span>
-          <span class="text-red-300">Negativ effekt</span>
-        </li>
-        </ul>
-      </li>
-      <li><span class="font-medium">Färgade grupper</span> visar hierarkisk struktur</li>
-      </ul>
-      <div class="flex-grow"></div>
-      <div class="mt-6 text-xs text-white/40 text-right sticky bottom-0">
-      &copy; ${new Date().getFullYear()} Mistra Co-Creating Better Blue.
-      </div>
-    `;
-    // Ensure sidebar uses flex layout with column direction and full height
-    sidebar.style.display = "flex";
-    sidebar.style.flexDirection = "column";
-    sidebar.style.height = "100%";
-  }
 
   // Add styles for highlighted and faded elements
   cy.style()
@@ -522,7 +524,10 @@ function renderGraph(elements) {
   // Show initial sidebar on load
 }
 
-// Call loadData and show initial sidebar content
+// Show initial sidebar immediately
+showInitialSidebar();
+
+// Call loadData and show initial sidebar content again after data is loaded
 loadData().then(() => {
   showInitialSidebar();
 });
