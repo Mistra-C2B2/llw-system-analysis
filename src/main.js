@@ -1,6 +1,8 @@
 import cytoscape from "cytoscape";
 import cola from "cytoscape-cola";
 import { parse } from "papaparse";
+import csvData from "../llw_system_analysis.csv?raw";
+import logo from "../C2B2-logo.svg";
 
 cytoscape.use(cola);
 
@@ -18,7 +20,7 @@ const colaLayout = {
 };
 
 async function loadData() {
-  const csvText = await fetch("llw_system_analysis.csv").then((r) => r.text());
+  const csvText = csvData;
   const parsed = parse(csvText, { header: true }).data;
   const rawNodes = [];
   const edges = [];
@@ -220,10 +222,9 @@ function renderGraph(elements) {
 
   // Show initial sidebar content
   function showInitialSidebar() {
-    sidebar.style.display = "block";
     sidebar.innerHTML = `
       <div class="pt-6 mb-4 flex flex-col items-center">
-      <img src="C2B2-logo.svg" alt="Logo" class="w-60 mb-2" />
+      <img src="${logo}" alt="Logo" class="w-60 mb-2" />
       <h1 class="text-2xl font-extrabold text-white-800 leading-tight text-center">Living Lab West</h1>
       <div class="text-2xl font-bold text-white-500 font-medium text-center">Systemanalys</div>
       </div>
@@ -519,7 +520,9 @@ function renderGraph(elements) {
   });
 
   // Show initial sidebar on load
-  showInitialSidebar();
 }
 
-loadData();
+// Call loadData and show initial sidebar content
+loadData().then(() => {
+  showInitialSidebar();
+});
