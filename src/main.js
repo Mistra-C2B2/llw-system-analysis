@@ -2,14 +2,22 @@ import cytoscape from "cytoscape";
 import cola from "cytoscape-cola";
 import { parse } from "papaparse";
 
-const logo = "/C2B2-logo.svg";
+// Helper function to get asset URLs that work both locally and on GitHub Pages
+function getAssetPath(path) {
+  // Remove leading slash if present
+  path = path.replace(/^\//, "");
+  // In development, use root path, in production use relative path
+  return import.meta.env.DEV ? `/${path}` : path;
+}
+
+const logo = getAssetPath("C2B2-logo.svg");
 let csvData = null;
 
 cytoscape.use(cola);
 
 async function initializeCsvData() {
-  csvData = await fetch("/llw_system_analysis.csv").then((response) =>
-    response.text()
+  csvData = await fetch(getAssetPath("llw_system_analysis.csv")).then(
+    (response) => response.text()
   );
 }
 
